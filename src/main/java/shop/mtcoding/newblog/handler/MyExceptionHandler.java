@@ -19,5 +19,5 @@ public class MyExceptionHandler {
         return sb.toString();
     }
 
-    // DTO를 응답(ajax)
+    // DTO를 응답(ajax관련)
 }

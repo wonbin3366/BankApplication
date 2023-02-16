@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import shop.mtcoding.newblog.dto.user.JoinReqDto;
 import shop.mtcoding.newblog.dto.user.LoginReqDto;
 
 @Mapper

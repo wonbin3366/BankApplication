@@ -1,16 +1,21 @@
 package shop.mtcoding.newblog.controller;
 
+import java.util.List;
+
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import shop.mtcoding.newblog.dto.account.AccountSaveReqDto;
 import shop.mtcoding.newblog.handler.ex.CustomException;
+import shop.mtcoding.newblog.model.account.Account;
+import shop.mtcoding.newblog.model.account.AccountRepository;
 import shop.mtcoding.newblog.model.user.User;
 import shop.mtcoding.newblog.service.AccountService;
 
@@ -22,6 +27,9 @@ public class AccountController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     @PostMapping("/account")
     public String save(AccountSaveReqDto accountSaveReqDto) {
@@ -43,10 +51,17 @@ public class AccountController {
         return "redirect:/";
     }
 
+    // 계좌 목록 보기
     @GetMapping({ "/", "/account" })
-    public String main() {
+    public String main(Model model) { // model에 값을 추가하면 request에 저장된다
+        User principal = (User) session.getAttribute("principal");
+        if (principal == null) {
+            return "redirect:/loginForm";
+        }
 
-        // throw new CustomException("인증되지 않았습니다", HttpStatus.UNAUTHORIZED);
+        List<Account> accountList = accountRepository.findByUserId(principal.getId());
+        model.addAttribute("accountList", accountList);
+
         return "account/main";
     }
 

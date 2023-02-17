@@ -10,7 +10,6 @@ select * from history_tb
 </select>
 
 <select id="findById" resultType="shop.mtcoding.newblog.model.history.History">
-6. 실행해보기
 select * from history_tb where id = #{id}
 </select>
 
@@ -46,5 +45,45 @@ w_account_id = #{wAccountId},
 d_account_id = #{dAccountId}
 where id = #{id}
 </update>
+
+<select id="findByGubun" resultType="shop.mtcoding.newblog.dto.history.HistoryRespDto">
+        <if test="gubun == 'withdraw'">
+            SELECT ht.id, ht.amount, ht.w_balance balance, wat.number sender, 'ATM' receiver, ht.created_at
+            FROM history_tb ht
+            INNER JOIN account_tb wat
+            ON ht.w_account_id = wat.id
+            WHERE ht.w_account_id = #{accountId}
+        </if>
+
+        <if test="gubun == 'deposit'">
+            SELECT ht.id, ht.amount, ht.d_balance balance, 'ATM' sender, dat.number receiver, ht.created_at
+            FROM history_tb ht
+            INNER JOIN account_tb dat
+            ON ht.d_account_id = dat.id
+            WHERE ht.d_account_id = #{accountId}
+        </if>
+
+        <if test="gubun == 'all'">
+            SELECT 
+            ht.id, 
+            ht.amount, 
+            nvl(wat.number, 'ATM') sender, 
+            nvl(dat.number, 'ATM') receiver,
+            case when ht.w_account_id = #{accountId} then ht.w_balance
+                 when ht.d_account_id = #{accountId} then ht.d_balance
+                 end as balance,
+            ht.created_at
+            FROM history_tb ht
+            LEFT OUTER JOIN account_tb wat
+            ON ht.w_account_id = wat.id
+            LEFT OUTER JOIN account_tb dat
+            ON ht.d_account_id = dat.id
+            WHERE ht.w_account_id = #{accountId} or ht.d_account_id = #{accountId};
+        </if>
+    </select>
+
+    
+          
+    
 
 </mapper>

@@ -11,14 +11,18 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import shop.mtcoding.newblog.dto.account.AccountDepositReqDto;
+import shop.mtcoding.newblog.dto.account.AccountDetailRespDto;
 import shop.mtcoding.newblog.dto.account.AccountSaveReqDto;
 import shop.mtcoding.newblog.dto.account.AccountTransferReqDto;
 import shop.mtcoding.newblog.dto.account.AccountWithdrawReqDto;
+import shop.mtcoding.newblog.dto.history.HistoryRespDto;
 import shop.mtcoding.newblog.handler.ex.CustomException;
 import shop.mtcoding.newblog.model.account.Account;
 import shop.mtcoding.newblog.model.account.AccountRepository;
+import shop.mtcoding.newblog.model.history.HistoryRepository;
 import shop.mtcoding.newblog.model.user.User;
 import shop.mtcoding.newblog.service.AccountService;
 
@@ -33,6 +37,9 @@ public class AccountController {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    private HistoryRepository historyRepository;
 
     @PostMapping("/account/transfer")
     public String transfer(AccountTransferReqDto accountTransferReqDto) {
@@ -135,8 +142,25 @@ public class AccountController {
         return "account/main";
     }
 
-    @GetMapping("/account/{id}")
-    public String detail(@PathVariable int id) {
+    @GetMapping("/account/{id}") // get은 바디값이없어서 밑의값은 쿼리스트링이다.
+    public String detail(@PathVariable int id, @RequestParam(name = "gubun", defaultValue = "all") String gubun,
+            Model model) {
+        // 1. 인증체크
+        User principal = (User) session.getAttribute("principal");
+        if (principal == null) {
+            return "redirect:/loginForm";
+        }
+
+        // 2. 레파지토리 호출 (메서드를 3개 or 마이바티스 동적쿼리)
+        AccountDetailRespDto aDto = accountRepository.findByIdWithUser(id);
+        if (aDto.getUserId() != principal.getId()) {
+            throw new CustomException("해당 계좌를 볼 수 있는 권한이 없습니다", HttpStatus.FORBIDDEN);
+        }
+        List<HistoryRespDto> hDtoList = historyRepository.findByGubun(gubun, id);
+
+        model.addAttribute("aDto", aDto);
+        model.addAttribute("hDtoList", hDtoList);
+
         return "account/detail";
     }
 

@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import shop.mtcoding.newblog.dto.account.AccountDepositReqDto;
 import shop.mtcoding.newblog.dto.account.AccountSaveReqDto;
+import shop.mtcoding.newblog.dto.account.AccountTransferReqDto;
 import shop.mtcoding.newblog.dto.account.AccountWithdrawReqDto;
 import shop.mtcoding.newblog.handler.ex.CustomException;
 import shop.mtcoding.newblog.model.account.Account;
@@ -32,6 +34,37 @@ public class AccountController {
     @Autowired
     private AccountRepository accountRepository;
 
+    @PostMapping("/account/transfer")
+    public String transfer(AccountTransferReqDto accountTransferReqDto) {
+        User principal = (User) session.getAttribute("principal");
+        if (principal == null) {
+            throw new CustomException("로그인 해주세요", HttpStatus.UNAUTHORIZED);
+        }
+
+        if (accountTransferReqDto.getWAccountNumber().equals(accountTransferReqDto.getDAccountNumber())) {
+            throw new CustomException("출금계좌와 입금계좌가 동일할 수 없습니다.", HttpStatus.BAD_REQUEST);
+        }
+        if (accountTransferReqDto.getAmount() == null) {
+            throw new CustomException("amount를 입력해주세요", HttpStatus.BAD_REQUEST);
+        }
+        if (accountTransferReqDto.getAmount().longValue() <= 0) {
+            throw new CustomException("이체액이 0원 이하일 수 없습니다.", HttpStatus.BAD_REQUEST);
+        }
+        if (accountTransferReqDto.getWAccountNumber() == null || accountTransferReqDto.getWAccountNumber().isEmpty()) {
+            throw new CustomException("출금계좌번호를 입력해주세요", HttpStatus.BAD_REQUEST);
+        }
+        if (accountTransferReqDto.getDAccountNumber() == null || accountTransferReqDto.getWAccountNumber().isEmpty()) {
+            throw new CustomException("입금계좌번호를 입력해주세요", HttpStatus.BAD_REQUEST);
+        }
+        if (accountTransferReqDto.getWAccountPassword() == null
+                || accountTransferReqDto.getWAccountPassword().isEmpty()) {
+            throw new CustomException("계좌비밀번호를 입력해주세요", HttpStatus.BAD_REQUEST);
+        }
+        int accountId = accountService.이체하기(accountTransferReqDto, principal.getId());
+
+        return "redirect:/account/" + accountId;
+    }
+
     @PostMapping("/account/withdraw")
     public String withdraw(AccountWithdrawReqDto accountWithdrawReqDto) {
         if (accountWithdrawReqDto.getAmount() == null) {
@@ -50,6 +83,22 @@ public class AccountController {
         int accountId = accountService.계좌출금(accountWithdrawReqDto);
 
         return "redirect:/account/" + accountId;
+    }
+
+    @PostMapping("/account/deposit")
+    public String deposit(AccountDepositReqDto accountDepositReqDto) {
+        if (accountDepositReqDto.getAmount() == null) {
+            throw new CustomException("amount를 입력해주세요", HttpStatus.BAD_REQUEST);
+        }
+        if (accountDepositReqDto.getAmount().longValue() <= 0) {
+            throw new CustomException("입금액이 0원 이하일 수 없습니다.", HttpStatus.BAD_REQUEST);
+        }
+        if (accountDepositReqDto.getDAccountNumber() == null || accountDepositReqDto.getDAccountNumber().isEmpty()) {
+            throw new CustomException("계좌번호를 입력해주세요", HttpStatus.BAD_REQUEST);
+        }
+
+        accountService.계좌입금(accountDepositReqDto);
+        return "redirect:/";
     }
 
     @PostMapping("/account")
